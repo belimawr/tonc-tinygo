@@ -80,5 +80,6 @@ Or open the emulator and load the rom
 
 ## Resources
  - [Tonc](https://www.coranac.com/tonc/text/toc.htm)
+ - [GBATEK](https://problemkaputt.de/gbatek.htm)
  - Building GBA games in GO: [Video](https://www.youtube.com/watch?v=mrWJZSVSRVQ), [slides](https://engineering.getweave.com/talk/gba-games-in-go/go_users_group_slides.pdf)
 
