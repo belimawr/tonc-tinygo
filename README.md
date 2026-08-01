@@ -10,6 +10,10 @@ The whole repository is a single Go project, each folder is one of
 Tonc's chapters/sub-chapters. Chapters 1 and 2 are information about the hardware,
 hence the first folder is `03.1-my-first-gba-demo`.
 
+`sandbox` is me going rouge and having fun with the code of that
+specific chapter, it has sub folders matching the chapter where I
+decided to stop following the tutorial and went rogue.
+
 ## Dev env setup
 ### Download and install TinyGo
 Get the latest [TinyGo](https://tinygo.org/) release from

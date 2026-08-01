@@ -18,7 +18,7 @@ func main() {
 	// 4000000h - DISPCNT - LCD Control (Read/Write)
 	// b000010000000011
 	// Video mode: 3
-	// Screen display BG3: on
+	// Screen display BG2: on
 	lcdControll.Set(0x403)
 
 	// VRAM	0600:0000h to 0601:7FFFh
