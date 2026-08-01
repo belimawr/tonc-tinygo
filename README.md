@@ -7,8 +7,8 @@ them in Go using [TinyGo](https://tinygo.org/) to compile.
 
 ## Structure
 The whole repository is a single Go project, each folder is one of
-Tonc's chapters. Chapters 1 and 2 are information about the hardware,
-hence the first folder is `03-my-first-gba-demo`.
+Tonc's chapters/sub-chapters. Chapters 1 and 2 are information about the hardware,
+hence the first folder is `03.1-my-first-gba-demo`.
 
 ## Dev env setup
 ### Download and install TinyGo
