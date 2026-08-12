@@ -1,7 +1,6 @@
 package mmio
 
 import (
-	"device/gba"
 	"runtime/volatile"
 	"unsafe"
 )
@@ -9,7 +8,7 @@ import (
 // ========================= Display Control Register =========================
 // Address: 0x4000000 - REG_DISPCNT (The display control register)
 // var REG_DISPCNT = gba.DISP.DISPCNT
-var REG_DISPCNT = (*volatile.Register16)(unsafe.Add(unsafe.Pointer(gba.REG_BASE), uintptr(0x0)))
+var REG_DISPCNT = (*volatile.Register16)(unsafe.Add(unsafe.Pointer(MEM_IO), uintptr(0x0)))
 
 // Source: https://www.cs.rit.edu/~tjh8300/CowBite/CowBiteSpec.htm#REG_DISPCNT
 /*
@@ -63,6 +62,3 @@ const (
 	DCNT_BG3 = 0x0800 // L
 	DCNT_OBJ = 0x1000 // S
 )
-
-// VRAM Video RAM, only 16 bits write
-var VRAM = gba.MEM_VRAM
