@@ -9,7 +9,11 @@ import (
 	"github.com/belimawr/tonc-tinygo/types"
 )
 
-var width = uint(240)
+const (
+	size   = 10
+	width  = 240
+	height = 160
+)
 
 type point struct {
 	x      int
@@ -23,8 +27,8 @@ func (p *point) setPos(x, y int) {
 }
 
 func (p *point) draw() {
-	for x := range 10 {
-		for y := range 5 {
+	for x := range size {
+		for y := range size {
 			mmio.SetPixelM3(p.x+x, p.y+y, p.colour)
 		}
 	}
@@ -35,8 +39,8 @@ func (p *point) pos() (x, y int) {
 }
 
 func (p *point) clear() {
-	for x := range 10 {
-		for y := range 5 {
+	for x := range size {
+		for y := range size {
 			mmio.SetPixelM3(p.x+x, p.y+y, 0x0)
 		}
 	}
@@ -114,12 +118,24 @@ func update(evt interrupt.Interrupt) {
 	switch keyValue := regKEYPAD.Get(); keyValue {
 	case keyUP:
 		y--
+		if y < 0 {
+			y = 0
+		}
 	case keyDOWN:
 		y++
+		if y > height-size {
+			y = height - 1 - size
+		}
 	case keyLEFT:
 		x--
+		if x < 0 {
+			x = 0
+		}
 	case keyRIGHT:
 		x++
+		if x > width-size {
+			x = width - 1 - size
+		}
 	case keyA:
 		current = &p1
 		x, y = current.pos()
