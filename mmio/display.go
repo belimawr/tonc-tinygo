@@ -1,14 +1,8 @@
 package mmio
 
-import (
-	"runtime/volatile"
-	"unsafe"
-)
-
 // ========================= Display Control Register =========================
-// Address: 0x4000000 - REG_DISPCNT (The display control register)
-// var REG_DISPCNT = gba.DISP.DISPCNT
-var REG_DISPCNT = (*volatile.Register16)(unsafe.Add(unsafe.Pointer(MEM_IO), uintptr(0x0)))
+// Address: 0x400_0000 - REG_DISPCNT (The display control register)
+var REG_DISPCNT = M16(0x0400_0000)
 
 // Source: https://www.cs.rit.edu/~tjh8300/CowBite/CowBiteSpec.htm#REG_DISPCNT
 /*
@@ -43,6 +37,17 @@ var REG_DISPCNT = (*volatile.Register16)(unsafe.Add(unsafe.Pointer(MEM_IO), uint
    E   (V) = Enable Window 1
    F   (W) = Enable Sprite Windows
 */
+
+// ========================= Register Display Status  =========================
+// Address: 0x0400_0004
+var REG_DISPSTAT = M16(0x0400_0004)
+
+// ========================= Register Display Count   =========================
+// Address 0x0400_0006h
+var REG_VCOUNT = M16(0x0400_0006)
+
+// ================================= Cart RAM =================================
+var CART_RAM = M8(0x0300_0000)
 
 const (
 	// Video modes/BG modes

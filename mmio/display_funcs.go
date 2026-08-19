@@ -14,5 +14,5 @@ const (
 func SetPixelM3(x, y int, c types.Colour) {
 	// VRAM uses 2-byte (16 bit) words, so we need to double the offset
 	offset := uintptr(x+y*width) * 2
-	Mem16(uintptr(MEM_VRAM + offset)).Set(uint16(c))
+	M16(uintptr(MEM_VRAM + offset)).Set(uint16(c))
 }

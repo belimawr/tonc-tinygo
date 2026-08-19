@@ -55,7 +55,7 @@ var (
 // Compile: tinygo build -o rom.gba -target gameboy-advance .
 // Run: mgba rom.gba
 
-var saveGame *volatile.Register16
+var saveGame *volatile.Register8
 
 func main() {
 	mmio.REG_DISPCNT.Set(mmio.DCNT_MODE3 | mmio.DCNT_BG2)
@@ -81,15 +81,14 @@ func main() {
 	// 0000010 ffff ffff ffff ffff ffff ffff ffff ffff
 	// *
 	// 0008000
-	saveGame = mmio.Mem16(uintptr(0x0E000000))
+	saveGame = mmio.CART_RAM
 	saveGame.Set(0xBA) // Something that is easy to see in a hex dump and memory viewer
 
 	// Enable V and H blank interruptions
 	// Interrupt code source:
 	// https://dev.to/aurelievache/learning-go-by-examples-part-5-create-a-game-boy-advance-gba-game-in-go-5944
-	regDISPSTAT := mmio.Mem16(uintptr(0x4000004))
-	regDISPSTAT.SetBits(1<<3 | 1<<4)
 
+	mmio.REG_DISPSTAT.SetBits(1<<3 | 1<<4)
 	interrupt.New(machine.IRQ_VBLANK, update).Enable()
 
 	for {
@@ -98,7 +97,7 @@ func main() {
 
 // ============================================================
 // Let's try to add some movement using the keys.
-var regKEYPAD = mmio.Mem16(uintptr(0x04000130))
+var regKEYPAD = mmio.M16(uintptr(0x0400_0130))
 
 var (
 	keyUP        = uint16(959)
@@ -139,15 +138,15 @@ func update(evt interrupt.Interrupt) {
 	case keyA:
 		current = &p1
 		x, y = current.pos()
-		saveGame.Set(uint16(1))
+		saveGame.Set(uint8(1))
 	case keyB:
 		current = &p2
 		x, y = current.pos()
-		saveGame.Set(uint16(2))
+		saveGame.Set(uint8(2))
 	case keyLSHOULDER, keyRSHOULDER:
 		current = &p3
 		x, y = current.pos()
-		saveGame.Set(uint16(3))
+		saveGame.Set(uint8(3))
 	}
 
 	current.clear()
