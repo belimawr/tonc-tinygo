@@ -9,14 +9,22 @@ import (
 func bmp16_line(x1, y1, x2, y2 int, clr types.Colour, dstBase, dstPitch int) {
 	var dx, dy, xstep, ystep int
 	dst := dstBase + y1*dstPitch + x1*2
-	dstPitch /= 2
+
+	// This is based on a C algorithm dstPitch is the array offset
+	// for the 16 bits type, in Go we're dealing directly with the 8 bits
+	// memory addresses and 16 bits colurs, so we need to multiply it by 2.
+	// Which is the same as skipping the divide by 2 step of the
+	// original algorithm.
+	// dstPitch /= 2
 
 	// --- Normalisation ---
+	// Same thing here for xstep and ystep we need to advance:
+	// 16 bits = 2 bytes = 2 memory addresses so use +2/-2 instead of +1/-1
 	if x1 > x2 {
-		xstep = -1
+		xstep = -2
 		dx = x1 - x2
 	} else {
-		xstep = +1
+		xstep = +2
 		dx = x2 - x1
 
 	}
@@ -31,16 +39,16 @@ func bmp16_line(x1, y1, x2, y2 int, clr types.Colour, dstBase, dstPitch int) {
 
 	// --- Drawing ---
 	if dy == 0 { // Horizontal
-		for ii := 0; ii < dx; ii++ {
-			mmio.SetM16Colour(dst+ii*ystep, clr)
+		for ii := 0; ii <= dx; ii++ {
+			mmio.SetM16Colour(dst+ii*xstep, clr)
 		}
 	} else if dx == 0 { // Vertical
-		for ii := 0; ii < dy; ii++ {
+		for ii := 0; ii <= dy; ii++ {
 			mmio.SetM16Colour(dst+ii*ystep, clr)
 		}
-	} else if dx > dy { // Diagonal, slope <= 1
+	} else if dx >= dy { // Diagonal, slope <= 1
 		dd := 2*dy - dx
-		for ii := 0; ii < dx; ii++ {
+		for ii := 0; ii <= dx; ii++ {
 			mmio.SetM16Colour(dst, clr)
 			if dd >= 0 {
 				dd -= 2 * dx
@@ -51,7 +59,7 @@ func bmp16_line(x1, y1, x2, y2 int, clr types.Colour, dstBase, dstPitch int) {
 		}
 	} else { // Diagonal, slope > 1
 		dd := 2*dx - dy
-		for ii := 0; ii < dy; ii++ {
+		for ii := 0; ii <= dy; ii++ {
 			mmio.SetM16Colour(dst, clr)
 			if dd >= 0 {
 				dd -= 2 * dy
@@ -72,7 +80,10 @@ func bmp16_rec(left, top, right, bottom int, clr types.Colour, dstBase, dstPitch
 	// --- Draw ---
 	for iy := 0; iy < int(height); iy++ {
 		for ix := 0; ix < int(width); ix++ {
-			mmio.SetM16Colour(dst+iy*dstPitch+ix, clr)
+			// This is based on a C algorithm ix and iy are the array offset
+			// for the 16 bits type, in Go we're dealing directly with the 8 bits
+			// memory addresses, so multiply dx and dy by 2
+			mmio.SetM16Colour(dst+(iy*2)*dstPitch+(ix*2), clr)
 		}
 	}
 }
@@ -97,15 +108,15 @@ func m3_plot(x, y int, clr types.Colour) {
 }
 
 func m3_line(x1, y1, x2, y2 int, clr types.Colour) {
-	bmp16_line(x1, y1, x2, y2, clr, int(mmio.MEM_VRAM), M3_WIDTH/2)
+	bmp16_line(x1, y1, x2, y2, clr, int(mmio.MEM_VRAM), M3_WIDTH*2)
 }
 
 func m3_rect(left, top, right, bottom int, clr types.Colour) {
-	bmp16_rec(left, top, right, bottom, clr, int(mmio.MEM_VRAM), M3_WIDTH/2)
+	bmp16_rec(left, top, right, bottom, clr, int(mmio.MEM_VRAM), M3_WIDTH*2)
 }
 
 func m3_frame(left, top, right, bottom int, clr types.Colour) {
-	bmp16_frame(left, top, right, bottom, clr, int(mmio.MEM_VRAM), M3_WIDTH/2)
+	bmp16_frame(left, top, right, bottom, clr, int(mmio.MEM_VRAM), M3_WIDTH*2)
 }
 
 // m3_fill fills the whole screen with one colour
