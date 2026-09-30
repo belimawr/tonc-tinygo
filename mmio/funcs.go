@@ -1,3 +1,5 @@
+//go:build !tinydebug
+
 package mmio
 
 import (
