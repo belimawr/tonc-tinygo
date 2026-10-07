@@ -173,12 +173,6 @@ func main() {
 		m3_line(15+11*ii, 88, 104-11*ii, 150, types.NewColour(0, uint16(jj), uint16(jj)))
 	}
 
-	// Debug/help with PNG to GBA
-	mmio.SetM16Colour(int(mmio.MEM_VRAM), CLR_BLUE)
-	mmio.SetM16Colour(int(mmio.MEM_VRAM+2), CLR_RED)
-	mmio.SetM16Colour(int(mmio.MEM_VRAM+4), CLR_LIME)
-	mmio.SetM16Colour(int(mmio.MEM_VRAM+6), CLR_WHITE)
-	mmio.SetM16Colour(int(mmio.MEM_VRAM+8), CLR_BLACK)
 	for {
 	}
 }

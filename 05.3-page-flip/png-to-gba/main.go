@@ -74,6 +74,10 @@ func main() {
 		binary.Write(buff, binary.LittleEndian, c)
 	}
 
+	if err := os.WriteFile("bin.dat", buff.Bytes(), 0666); err != nil {
+		log.Fatalf("cannot write dat file: %s", err)
+	}
+
 	writeImg(os.Stdout, buff.Bytes(), "main", "myImg")
 }
 
