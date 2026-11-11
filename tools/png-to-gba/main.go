@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/belimawr/tonc-tinygo/types"
 )
@@ -66,30 +67,57 @@ Create a paletted PNG using Gimp:
 		log.Fatalf("cannot decode png: %s", err)
 	}
 
-	imgP, ok := img.(*image.Paletted)
-	if !ok {
-		log.Fatal("not a paletted png")
-	}
-
 	switch mode {
 	case "paletted":
-		if err := writeImgToFile(out, img, paletted(imgP)); err != nil {
+		imgP, ok := img.(*image.Paletted)
+		if !ok {
+			log.Fatal("not a paletted png")
+		}
+
+		if len(imgP.Palette) > 256 {
+			log.Fatalf("the maximum palette size is 256, current palette is %d", len(imgP.Palette))
+		}
+
+		idx := strings.Index(out, ".")
+		pName := out[:]
+		if idx > 0 {
+			pName = out[:idx]
+		}
+		pName += ".palette"
+
+		if err := writePaletteToFile(pName, imgP); err != nil {
+			log.Fatalf("cannot write palette to disk %s:", err)
+		}
+
+		if err := writeImgToFile(out, img, paletted(imgP.Palette)); err != nil {
 			log.Fatalf("cannot write paletted %s:", err)
 		}
-	case "bitmap":
 
-		if err := writeImgToFile(out, img, bitmap(img)); err != nil {
+	case "bitmap":
+		if err := writeImgToFile(out, img, bitmap); err != nil {
 			log.Fatalf("cannot write bitmap %s:", err)
 		}
 
 	case "goBitmap":
-		if err := writeImgAsGoBitmap("go.dat", "main", "myImg", img); err != nil {
+		if err := writeImgAsGoBitmap(out, "main", "myImg", img); err != nil {
 			log.Fatalf("cannot write paletted %s:", err)
 		}
+
 	default:
 		log.Fatalf("mode %q not supported", mode)
 	}
+}
 
+func writePaletteToFile(filename string, img *image.Paletted) error {
+	buff := bytes.NewBuffer(make([]byte, 0, len(img.Palette)*2))
+	for _, c := range img.Palette {
+		gbaC := rgbaToColour(c)
+		if err := binary.Write(buff, binary.LittleEndian, gbaC); err != nil {
+			return fmt.Errorf("cannot convert to bytes: %w", err)
+		}
+	}
+
+	return os.WriteFile(filename, buff.Bytes(), 0666)
 }
 
 type ImgWriter func(w io.Writer, c color.Color) error
@@ -99,7 +127,6 @@ func writeImg(w io.Writer, img image.Image, fn ImgWriter) error {
 
 	for y := rect.Min.Y; y < rect.Max.Y; y++ {
 		for x := rect.Min.X; x < rect.Max.X; x++ {
-
 			rawC := img.At(x, y)
 			if err := fn(w, rawC); err != nil {
 				return fmt.Errorf("cannot write colour at (%d, %d): %w", x, y, err)
@@ -122,10 +149,9 @@ func writeImgToFile(filename string, img image.Image, fn ImgWriter) error {
 	return nil
 }
 
-func paletted(img *image.Paletted) func(w io.Writer, c color.Color) error {
+func paletted(palette color.Palette) func(w io.Writer, c color.Color) error {
 	return func(w io.Writer, c color.Color) error {
-
-		idx := uint8(img.Palette.Index(c))
+		idx := uint8(palette.Index(c))
 		if err := binary.Write(w, binary.LittleEndian, idx); err != nil {
 			return fmt.Errorf("cannot convert to bytes: %w", err)
 		}
@@ -134,40 +160,38 @@ func paletted(img *image.Paletted) func(w io.Writer, c color.Color) error {
 	}
 }
 
-func bitmap(img image.Image) ImgWriter {
-	return func(w io.Writer, c color.Color) error {
-		gbaC := rgbaToColour(c)
-		binary.Write(w, binary.LittleEndian, gbaC)
-		return nil
-	}
+func bitmap(w io.Writer, c color.Color) error {
+	gbaC := rgbaToColour(c)
+	binary.Write(w, binary.LittleEndian, gbaC)
+	return nil
 }
 
 func writeImgAsGoBitmap(filename, pkg, varName string, img image.Image) error {
+	idx := strings.Index(filename, ".")
+	if idx > 0 {
+		filename = filename[:idx]
+	}
+	filename += ".go"
+
 	buff := bytes.Buffer{}
 
 	fmt.Fprintf(&buff, "package %s\n\n", pkg)
-	fmt.Fprintf(&buff, "var %s = []byte{\n", varName)
+	fmt.Fprintf(&buff, "var %s = []uint16{\n", varName)
 
-	b := bytes.NewBuffer(make([]byte, 2))
+	i := 0
 	w := func(w io.Writer, c color.Color) error {
-		b.Reset()
-
 		gbaColour := rgbaToColour(c)
-		if err := binary.Write(b, binary.LittleEndian, gbaColour); err != nil {
-			return fmt.Errorf("cannot convert %X to binary: %s", c, err)
+		fmt.Fprintf(&buff, "0x%04X, ", gbaColour)
+		i++
+		if i%8 == 0 {
+			fmt.Fprint(&buff, "\n")
 		}
-
-		bb := b.Bytes()
-		if _, err := fmt.Fprintf(&buff, "0x%02x, 0x%02x\n", bb[0], bb[1]); err != nil {
-			return fmt.Errorf("cannot write to buffer: %w", err)
-		}
-
 		return nil
 	}
 
 	writeImg(&buff, img, w)
 
-	fmt.Fprintln(&buff, "}")
+	fmt.Fprintln(&buff, "\n}")
 	if err := os.WriteFile(filename, buff.Bytes(), 0666); err != nil {
 		return fmt.Errorf("cannot write file: %w", err)
 	}
@@ -176,10 +200,13 @@ func writeImgAsGoBitmap(filename, pkg, varName string, img image.Image) error {
 }
 
 func rgbaToColour(rawC color.Color) types.Colour {
-	r, g, b, _ := rawC.RGBA()
-	r = min(r, 31)
-	g = min(g, 31)
-	b = min(b, 31)
+	// RGBA() returns 0-65535
+	r16, g16, b16, _ := rawC.RGBA()
 
-	return types.NewColour(uint16(r), uint16(g), uint16(b))
+	// Shift right by 11 to map [0-65535] down to [0-31]
+	r := uint16(r16 >> 11)
+	g := uint16(g16 >> 11)
+	b := uint16(b16 >> 11)
+
+	return types.NewColour(r, g, b)
 }
