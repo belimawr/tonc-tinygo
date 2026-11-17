@@ -52,8 +52,8 @@ func loadgfx() {
 		PALLET32[i] = frontPal[i]
 	}
 
-	for ii := 0; ii < 16; ii++ {
-		for i := 0; i < 144/4; i++ {
+	for ii := range 16 {
+		for i := range 144 / 4 {
 			FRONT32[ii*60+i] = frontBitmap[(ii*144/4)+i]
 			BACK32[ii*60+i] = backBitmap[(ii*144/4)+i]
 		}
