@@ -28,11 +28,13 @@ func main() {
 	var (
 		in   string
 		mode string
-		out  string
 	)
 
 	flag.Usage = func() {
 		msg := `Convert PNG to GameBoy Advance images
+
+The output file(s) have the same name as the input image, but the extension is replaced
+by: .go, .dat or .palette
 
 Create a paletted PNG using Gimp:
  - Create a new image 240 x 160 pixels (to fill the whole screen) or smaller
@@ -51,9 +53,14 @@ Create a paletted PNG using Gimp:
 	}
 
 	flag.StringVar(&in, "in", "img.png", "Input image")
-	flag.StringVar(&out, "out", "out.dat", "Output file")
 	flag.StringVar(&mode, "mode", "paletted", "Output format: paletted|bitmap|goBitmap")
 	flag.Parse()
+
+	idx := strings.Index(in, ".")
+	baseName := in[:]
+	if idx > 0 {
+		baseName = in[:idx]
+	}
 
 	f, err := os.ReadFile(in)
 	if err != nil {
@@ -78,27 +85,24 @@ Create a paletted PNG using Gimp:
 			log.Fatalf("the maximum palette size is 256, current palette is %d", len(imgP.Palette))
 		}
 
-		idx := strings.Index(out, ".")
-		pName := out[:]
-		if idx > 0 {
-			pName = out[:idx]
-		}
-		pName += ".palette"
-
-		if err := writePaletteToFile(pName, imgP); err != nil {
+		outP := baseName + ".palette"
+		if err := writePaletteToFile(outP, imgP); err != nil {
 			log.Fatalf("cannot write palette to disk %s:", err)
 		}
 
-		if err := writeImgToFile(out, img, paletted(imgP.Palette)); err != nil {
+		outD := baseName + ".dat"
+		if err := writeImgToFile(outD, img, paletted(imgP.Palette)); err != nil {
 			log.Fatalf("cannot write paletted %s:", err)
 		}
 
 	case "bitmap":
+		out := baseName + ".dat"
 		if err := writeImgToFile(out, img, bitmap); err != nil {
 			log.Fatalf("cannot write bitmap %s:", err)
 		}
 
 	case "goBitmap":
+		out := baseName + ".go"
 		if err := writeImgAsGoBitmap(out, "main", "myImg", img); err != nil {
 			log.Fatalf("cannot write paletted %s:", err)
 		}
